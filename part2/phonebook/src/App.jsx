@@ -1,19 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
+import phonebook from './services/phonebook'
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456', id: 1 },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-  ])
+  const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
   const [showAll, setShowAll] = useState(true);
+
+  useEffect(() => {
+    phonebook.getAll()
+      .then(res => {
+        setPersons(res)
+      })
+  }, [])
 
   const nameChange = (event) => {
     setNewName(event.target.value);
@@ -27,8 +30,28 @@ const App = () => {
     }
     
     if (persons.some(item => objCheck(personObject, item))) {
-      return alert(`${newName} is already added to phonebook`);
-    } else setPersons(persons.concat(personObject));
+      if (confirm(`${personObject.name} is already added to phonebook, replace old number with a new one?`)) {
+        const foundPerson = persons.find(person => person.name === personObject.name)
+        phonebook.update(foundPerson.id, personObject)
+        .then(res => {
+          const newList = persons.map(person => person.id === res.id ? res : person)
+          setPersons(newList)
+        })
+      } else return
+    } else if (personObject.name === '' || personObject.number === '') {
+      return alert('Must fill out entire contents of form')
+    }
+    else {
+      phonebook
+      .create(personObject)
+      .then(res => {
+        // console.log(response.data)
+        // console.log(personObject)
+        setPersons(persons.concat(res));
+        setNewName('')
+        setNewNumber('')
+      })
+    }
   }
   
   const objCheck = (obj1, obj2) => {
@@ -43,6 +66,19 @@ const App = () => {
     const value = event.target.value;
     setFilter(value);
     (value !== '') ? setShowAll(false) : setShowAll(true);
+  }
+
+  const remove = (id, name) => {
+    if (confirm(`Delete ${name}?`)) {
+      phonebook.remove(id)
+      .then(() => {
+        const newList = persons.filter((person) => person.id !== id)
+        console.log('new list:')
+        console.log(newList)
+        setPersons(newList)
+      })
+    } else return;
+
   }
 
   const filterShow = showAll 
@@ -64,7 +100,7 @@ const App = () => {
         </div>
       </form>
       <h3>Numbers</h3>
-      <Persons filterShow={filterShow}/>
+      <Persons filterShow={filterShow} remove={remove}/>
     </div>
   )
 }
