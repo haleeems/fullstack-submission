@@ -14,7 +14,6 @@ const App = () => {
   useEffect(() => {
     countries.getAllCountries()
     .then((res) => {
-      // console.log(res)
       setAllCountries(res)
     })
   }, [])
@@ -22,12 +21,10 @@ const App = () => {
   const filterChange = (event) =>{
     const value = event.target.value
     setFilter(value)
-    console.log(value)
 
     const list = allCountries.filter(country => 
       country.name.common.toLowerCase().includes(value.toLowerCase())
     )
-    console.log(list)
     setFilteredCountries(list)
     setSelectedCountry(null)
   }
